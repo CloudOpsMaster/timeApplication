@@ -19,7 +19,7 @@ func main() {
 	mux.HandleFunc("/", Time)
 	mux.HandleFunc("/health", health)
 
-	err := http.ListenAndServe("5000", mux)
+	err := http.ListenAndServe(":80", mux)
 	log.Fatal(err)
 }
 
