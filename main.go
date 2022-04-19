@@ -2,67 +2,59 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+	"time"
 )
+
+type ViewData struct {
+	NewYork string `json:"NewYork"`
+	Berlin  string `json:"NewYork"`
+	Tokyo   string `json:"NewYork"`
+}
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", index)
-	mux.HandleFunc("/time", time)
+	mux.HandleFunc("/", Time)
 	mux.HandleFunc("/health", health)
 
-	err := http.ListenAndServe(":3000", mux)
+	err := http.ListenAndServe("5000", mux)
 	log.Fatal(err)
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
+func Time(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
 
-	// Здесь может быть общий код для всех запросов...
+	now := time.Now()
+	loc, _ := time.LoadLocation("UTC")
 
-	switch r.Method {
-	case http.MethodGet:
-		// Обработка GET запроса...
+	loc, _ = time.LoadLocation("America/New_York")
+	var New_York = now.In(loc)
 
-	case http.MethodPost:
-		// Обработка POST запроса...
+	loc, _ = time.LoadLocation("Europe/Berlin")
+	var Berlin = now.In(loc)
 
-	case http.MethodOptions:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		w.WriteHeader(http.StatusNoContent)
+	loc, _ = time.LoadLocation("Asia/Tokyo")
+	var Tokyo = now.In(loc)
 
-	default:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func time(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/time" {
-		http.NotFound(w, r)
-		return
+	data := ViewData{
+		NewYork: New_York.String(),
+		Berlin:  Berlin.String(),
+		Tokyo:   Tokyo.String(),
 	}
 
-	w.Header().Set("Content-Type", "text/html")
+	tmpl := template.Must(template.New("data").Parse(`<div>
+	    <p>New York: {{.NewYork}} </p>
+	    <p>Berlin:  {{.Berlin}} </p>
+	    <p>Tokyo:{{.Tokyo}} </p>
+	</div>`))
+	tmpl.Execute(w, data)
 
-	var test = "TEST!"
-	html := `<doctype html>
-        <html>
-        <head>
-          <title>Hello World</title>
-        </head>
-        <body>
-        <p>
-          <a href='/welcome'>Welcome `{{ test }}` </a> | <a href='/message'>Message</a>
-        </p>
-        </body>
-       </html>`
-	fmt.Fprintln(w, html)
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
